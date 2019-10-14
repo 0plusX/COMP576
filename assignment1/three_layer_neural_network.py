@@ -149,6 +149,7 @@ class NeuralNetwork(object):
         :return: label inferred
         '''
         self.feedforward(X, lambda x: self.actFun(x, type=self.actFun_type))
+
         return np.argmax(self.probs, axis=1)
 
     def backprop(self, X, y):

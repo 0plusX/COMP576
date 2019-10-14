@@ -133,7 +133,7 @@ class DeepNeuralNetwork(object):
 
         self.z1 = np.dot(X,self.W1) + self.b1
         self.a1 = actFun(self.z1)
-
+        #print('feedforword X = {}'.format(X.shape))
         self.hiddenLayers[0].feedforward(X)
         for i in range(1,self.num_layers):
             self.hiddenLayers[i].feedforward(self.hiddenLayers[i-1].layer_a)
@@ -171,9 +171,9 @@ class DeepNeuralNetwork(object):
 
         # Add regulatization term to loss (optional)
         sum_reg = sum([np.sum(np.square(layer.layer_W)) for layer in self.hiddenLayers])
-        sum_reg += np.sum(np.square(self.W1)) +np.sum(np.square(self.W2))
+        sum_reg += np.sum(np.square(self.W1)) +np.sum(np.square(self.WO))
         data_loss += self.reg_lambda / 2 * sum_reg
-        return (1. / num_examples) * data_loss
+        return (1. / num_examples) * data_loss / 10
 
     def predict(self, X):
         '''
@@ -196,25 +196,26 @@ class DeepNeuralNetwork(object):
 
         dldz2 = self.probs
         dldz2[range(len(X)),y] -= 1 #dldzO
+        dldz2 /= len(X)
         # dldz1 = dlda1 * da1dz1
 
         self.hiddenLayers[-1].layer_delta = dldz2
-        self.hiddenLayers[-1].layer_dw = np.dot(self.hiddenLayers[-1].layer_a.T,dldz2) #dWO
+        self.hiddenLayers[-1].layer_dw = np.dot(self.hiddenLayers[-1].layerInput.T,dldz2) #dWO
         self.hiddenLayers[-1].layer_db = np.sum(dldz2,axis = 0, keepdims = True) #dbO
-        print('z1 is {}'.format(str(self.z1.shape)))
+        #print('z1 is {}'.format(str(self.z1.shape)))
+        #print('X = {}'.format(str(X.shape)))
+        #print('layer1_input = {}, layer0_input = {}'.format(print()))
         # loop through hidden layers
         #self.hiddenLayers[-1].backprop(self.WO,dldz2)
         for i in range(self.num_layers-2,-1,-1):
-
-            print(i)
             self.hiddenLayers[i].backprop(self.hiddenLayers[i+1].layer_W,self.hiddenLayers[i+1].layer_delta)
 
 
-        dldz1 = np.dot(self.hiddenLayers[0].layer_delta, self.hiddenLayers[0].layer_W.T)* self.diff_actFun(self.z1,self.actFun_type)
-        dW1 = np.dot(X.T,dldz1)
-        db1 = np.sum(dldz1,axis = 0,keepdims =  True)
+        #dldz1 = np.dot(self.hiddenLayers[0].layer_delta, self.hiddenLayers[0].layer_W.T)* self.diff_actFun(self.z1,self.actFun_type)
+        #dW1 = np.dot(X.T,dldz1)
+        #db1 = np.sum(dldz1,axis = 0,keepdims =  True)
         #return dW1, dW2, db1, db2
-        return dW1,db1
+        #return dW1,db1
     def fit_model(self, X, y, epsilon=0.01, num_passes=20000, print_loss=True):
         '''
         fit_model uses backpropagation to train the network
@@ -229,25 +230,35 @@ class DeepNeuralNetwork(object):
             # Forward propagation
             self.feedforward(X, lambda x: self.actFun(x, type=self.actFun_type))
             # Backpropagation
-            dW1, dW2, db1, db2 = self.backprop(X, y)
+            #dW1, dW2, db1, db2 = self.backprop(X, y)
+            self.backprop(X, y)
 
             # Add derivatives of regularization terms (b1 and b2 don't have regularization terms)
-            dW2 += self.reg_lambda * self.WO
-            self.WO += -epsilon * dW2
-            self.bO += -epsilon * db2
-
+            #dW2 += self.reg_lambda * self.WO
+            #self.WO += -epsilon * dW2
+            #self.bO += -epsilon * db2
+            """for i in range(self.num_layers):
+                print('layer_a is {},layer_W is {},layer_b is {}'.format(str(self.hiddenLayers[i].layer_delta.shape),
+                                                                         str(self.hiddenLayers[i].layer_W.shape),
+                                                                         str(self.hiddenLayers[i].layer_b.shape)) )"""
 
             # Gradient descent parameter update
 
             # update weight and bias for the hidden layers
             for layer in self.hiddenLayers:
-                layer.layer_delta +=self.reg_lambda * layer.layer_W
+
+                #print('fir model: ID = {},dw = {},reg = {},W = {}'.format(layer.layerID, layer.layer_dw.shape,self.reg_lambda,layer.layer_W.shape))
+                layer.layer_dw +=self.reg_lambda * layer.layer_W
                 layer.layer_W += -epsilon * layer.layer_dw
                 layer.layer_b += -epsilon * layer.layer_db
 
-            dW1 += self.reg_lambda * self.W1
-            self.W1 += -epsilon * dW1
-            self.b1 += -epsilon * db1
+            #dW1 += self.reg_lambda * self.W1
+            #self.W1 += -epsilon * dW1
+            #self.b1 += -epsilon * db1
+            self.W1 = self.hiddenLayers[0].layer_W
+            self.b1 = self.hiddenLayers[0].layer_b
+            self.WO = self.hiddenLayers[-1].layer_W
+            self.bO = self.hiddenLayers[-1].layer_b
             # Optionally print the loss.
             # This is expensive because it uses the whole dataset, so we don't want to do it too often.
             if print_loss and i % 1000 == 0:
@@ -321,9 +332,10 @@ class Layer(object):
 
 
     def backprop(self,W,lastDelta):
-        print('W is {},ID = {},lastDelta is {}'.format(str(W.shape),str(self.layerID),str(lastDelta.shape)))
+        #print('W is {},ID = {},lastDelta is {}'.format(str(W.shape),str(self.layerID),str(lastDelta.shape)))
         #print(self.diff_actFun(self.layer_z,self.actFun_type))
-        print('layerz is {}'.format(self.layer_z.shape))
+        #print('layerz is {}'.format(self.layer_z.shape))
+        #print('layer_input is {}'.format(self.layerInput.shape))
         self.layer_delta = np.dot(lastDelta,np.transpose(W)) * self.diff_actFun(self.layer_z,self.actFun_type)
         self.layer_dw = np.dot(self.layerInput.T,self.layer_delta)
         self.layer_db = np.sum(self.layer_delta,axis = 0,keepdims = True)
@@ -333,7 +345,7 @@ def main():
      #plt.scatter(X[:, 0], X[:, 1], s=40, c=y, cmap=plt.cm.Spectral)
      #plt.show()
 
-     model = DeepNeuralNetwork(nn_input_dim=2, num_layers=3 , dim_layers = 3, nn_output_dim=2, actFun_type='tanh')
+     model = DeepNeuralNetwork(nn_input_dim=2, num_layers=5 , dim_layers = 3, nn_output_dim=2, actFun_type='tanh')
      model.fit_model(X,y)
      model.visualize_decision_boundary(X,y)
 

@@ -161,14 +161,20 @@ class NeuralNetwork(object):
 
         # IMPLEMENT YOUR BACKPROP HERE
 
-        dl3 = self.probs
-        dl3[range(len(X)),y] -= 1
+        dldz2 = self.probs
+        dldz2[range(len(X)),y] -= 1
+        # dldz1 = dlda1 * da1dz1
+        #print('np.dot')
+        #print(np.dot(dldz2, self.W2.T))
+        #print('diff_ac')
+        #print(self.diff_actFun(self.z1,self.actFun_type))
+        #print('z1 = {}, W2 = {}, dldz2 = {}'.format(str(self.z1.shape),str(self.W2.shape),str(dldz2.shape)))
+        dldz1 = np.dot(dldz2, self.W2.T)* self.diff_actFun(self.z1,self.actFun_type)
 
-        dl2 = np.dot(dl3, self.W2.T)* self.diff_actFun(self.z1,self.actFun_type)
-        dW2 = np.dot(self.a1.T,dl3)
-        db2 = np.sum(dl3,axis = 0, keepdims = True)
-        dW1 = np.dot(X.T,dl2)
-        db1 = np.sum(dl2,axis = 0,keepdims =  True)
+        dW2 = np.dot(self.a1.T,dldz2)
+        db2 = np.sum(dldz2,axis = 0, keepdims = True)
+        dW1 = np.dot(X.T,dldz1)
+        db1 = np.sum(dldz1,axis = 0,keepdims =  True)
         return dW1, dW2, db1, db2
 
     def fit_model(self, X, y, epsilon=0.01, num_passes=20000, print_loss=True):

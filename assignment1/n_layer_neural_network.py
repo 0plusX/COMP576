@@ -11,7 +11,8 @@ def generate_data():
     :return: X: input data, y: given labels
     '''
     np.random.seed(0)
-    X, y = datasets.make_moons(200, noise=0.20)
+    #X, y = datasets.make_moons(200, noise=0.20)
+    X, y = datasets.make_circles(200,noise = 0.20)
     return X, y
 
 def plot_decision_boundary(pred_func, X, y):
@@ -173,7 +174,7 @@ class DeepNeuralNetwork(object):
         sum_reg = sum([np.sum(np.square(layer.layer_W)) for layer in self.hiddenLayers])
         sum_reg += np.sum(np.square(self.W1)) +np.sum(np.square(self.WO))
         data_loss += self.reg_lambda / 2 * sum_reg
-        return (1. / num_examples) * data_loss / 10
+        return (1. / num_examples) * data_loss
 
     def predict(self, X):
         '''
@@ -345,7 +346,7 @@ def main():
      #plt.scatter(X[:, 0], X[:, 1], s=40, c=y, cmap=plt.cm.Spectral)
      #plt.show()
 
-     model = DeepNeuralNetwork(nn_input_dim=2, num_layers=5 , dim_layers = 3, nn_output_dim=2, actFun_type='tanh')
+     model = DeepNeuralNetwork(nn_input_dim=2, num_layers=3, dim_layers = 2, nn_output_dim=2, actFun_type='Sigmoid')
      model.fit_model(X,y)
      model.visualize_decision_boundary(X,y)
 

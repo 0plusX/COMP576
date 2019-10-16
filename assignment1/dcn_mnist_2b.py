@@ -218,7 +218,7 @@ def main():
             checkpoint_file = os.path.join(result_2b, 'checkpoint')
             saver.save(sess, checkpoint_file, global_step=i)
 
-            test_summary = sess.run(summary_op,feed_dict = {x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0})
+            test_summary = sess.run(summary_op,feed_dict = {x: mnist.test.images, y_: mnist.test.labels, keep_prob: 0.5})
             test.add_summary(test_summary, i)
             test.flush()
 

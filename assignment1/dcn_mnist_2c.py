@@ -222,13 +222,10 @@ def main():
             checkpoint_file = os.path.join(result_2b, 'checkpoint')
             saver.save(sess, checkpoint_file, global_step=i)
 
-            test_summary = sess.run(summary_op,feed_dict = {x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0})
+            test_summary = sess.run(summary_op,feed_dict = {x: mnist.test.images, y_: mnist.test.labels, keep_prob: 0.5})
             test.add_summary(test_summary, i)
             test.flush()
 
-            validate_summary = sess.run(summary_op,feed_dict = {x: mnist.validation.images, y_: mnist.validation.labels,keep_prob: 1.0})
-            test.add_summary(validate_summary, i)
-            test.flush()
 
         train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5}) # run one train_step
 

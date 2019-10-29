@@ -1,0 +1,4 @@
+https://github.com/ChilunC/Assignment2/blob/master/trainCifarStarterCode.py
+https://github.com/aimeecong/CNN/blob/e89d659f6ef69af20668d909b7650878c8affe6a/trainCifarStarterCode.py
+https://github.com/Keyspan/comp576/tree/51ff661899b5d71cd74bae0e497228515575fc7b/hw2
+https://github.com/bl166/LearningDeepLearning/blob/662ed854729243aa43ba80a1699e0fa9c6f4d0aa/ass2/trainCifarStarterCode.py

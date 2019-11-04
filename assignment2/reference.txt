@@ -1,4 +1,21 @@
 https://github.com/ChilunC/Assignment2/blob/master/trainCifarStarterCode.py
 https://github.com/aimeecong/CNN/blob/e89d659f6ef69af20668d909b7650878c8affe6a/trainCifarStarterCode.py
+below with report good Q2 ans
 https://github.com/Keyspan/comp576/tree/51ff661899b5d71cd74bae0e497228515575fc7b/hw2
+below with report
 https://github.com/bl166/LearningDeepLearning/blob/662ed854729243aa43ba80a1699e0fa9c6f4d0aa/ass2/trainCifarStarterCode.py
+new
+
+https://github.com/luffycodes/ELEC576/blob/828d856aed99415b09a7bcdcdad309466cf720e4/Assignment2/trainCifarStarterCode.py
+below with report 
+https://github.com/abhmul/COMP-576/blob/6481e5510f17c160f6369ba926f6835e16abae6a/Assignment2/trainCifarStarterCode.py
+https://github.com/guopeisheng/Deep-Learning-Course/blob/f5ccc2db2e16ba2e064a8a01a496fe7e0c2ee43e/Deep%20L%20HW02/trainCifarStarterCode.py
+https://github.com/chetanmaddula/Deep-Learning/blob/449d53261e132b79d1ef5db94fb6986aef1a4a6f/dcn_mnist.py
+https://github.com/afung-git/COMP576/blob/3c59bb9e2ba4d6a333f078ed5e62572db6d65a25/Assignment2/trainCifarStarterCode.py
+
+to go
+https://github.com/bl166/LearningDeepLearning/tree/a84436b9c7115dab9fb9a3b8312eb9f7c7c820b8/ass2
+
+https://github.com/dlej/elec576/blob/master/assignment2/Assignment%202.ipynb
+
+https://github.com/ZengChen94/Introduction-to-Deep-Learning/tree/203c3c25c7148e3791c40c3939451341e18cb169/Assignment%202

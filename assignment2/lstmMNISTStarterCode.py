@@ -4,11 +4,11 @@ import numpy as np
 
 from tensorflow.examples.tutorials.mnist import input_data
 
-mnist = #call mnist function
+mnist = input_data.read_data_sets('MNIST_data', one_hot=True) #call mnist function
 
-learningRate =
-trainingIters =
-batchSize =
+learningRate = 1e-3
+trainingIters = 5000
+batchSize = 100
 displayStep =
 
 nInput = #we want the input to take the 28 pixels

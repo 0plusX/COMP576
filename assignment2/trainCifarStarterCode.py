@@ -80,10 +80,12 @@ def max_pool_2x2(x):
     return h_max
 
 
-def Construct_ConvLayer(x_image,dimension):
+def Construct_ConvLayer(x_image,dimension,firstLayer = False):
     W_conv = weight_variable(dimension)
     b_conv = bias_variable([dimension[-1]])
     h_conv = tf.nn.relu(conv2d(x_image, W_conv) + b_conv)
+    if firstLayer:
+        return max_pool_2x2(h_conv), W_conv
     return max_pool_2x2(h_conv)
 
 def Construct_FCLayer(h_pool2, dimension,softmax = False):
@@ -127,6 +129,8 @@ for iclass in range(0, nclass):
         Test[itest,:,:,0] = im
         LTest[itest,iclass] = 1 # 1-hot lable
 
+plt.imshow(Train[-1,:,:,0],cmap = 'gray')
+plt.show()
 sess = tf.InteractiveSession()
 
 tf_data = tf.placeholder(tf.float32, shape=[None, imsize, imsize, nchannels])   #tf variable for the data, remember shape is [None, width, height, numberOfChannels]
@@ -141,7 +145,7 @@ dim2 = [5,5,32,64]
 dimdl = [7*7*64,1024]
 dimsoft = [1024,10]
 # first convolutional layer
-h_pool1 = Construct_ConvLayer(tf_data,dim1)
+h_pool1, W_conv1 = Construct_ConvLayer(tf_data,dim1, firstLayer = True)
 
 # second convolutional layer
 h_pool2 = Construct_ConvLayer(h_pool1,dim2)
@@ -172,17 +176,22 @@ sess.run(tf.initialize_all_variables())
 batch_xs = np.zeros((batchsize, imsize, imsize, nchannels)) #setup as [batchsize, width, height, numberOfChannels] and use np.zeros()
 batch_ys = np.zeros((batchsize, nclass))#setup as [batchsize, the how many classes]
 
-
+Loss_list = []
+Accuracy_list = []
 for i in range(500): # try a small iteration size once it works then continue
     perm = np.arange(nclass * ntrain)
     np.random.shuffle(perm)
     for j in range(batchsize):
         batch_xs[j,:,:,:] = Train[perm[j],:,:,:]
         batch_ys[j,:] = LTrain[perm[j],:]
+    #W_firstLayer = W_conv1.eval()
     if i%10 == 0:
-        print("train accuracy %g" % accuracy.eval(feed_dict = {tf_data: Test, tf_labels: LTest, keep_prob: 1.0}))
-        print("train Loss %g" % cross_entropy.eval(feed_dict = {tf_data: Test, tf_labels: LTest, keep_prob: 1.0}))
-        optimizer.run(feed_dict={}) # dropout only during training
+        train_accuracy = accuracy.eval(feed_dict = {tf_data: batch_xs, tf_labels: batch_ys, keep_prob: 1.0})
+        train_loss = cross_entropy.eval(feed_dict = {tf_data: batch_xs, tf_labels: batch_ys, keep_prob: 1.0})
+        Accuracy_list.append(train_accuracy)
+        Loss_list.append(train_loss)
+        print("step: {}, train accuracy:{}, loss:{}".format(i,train_accuracy,train_loss))
+    optimizer.run(feed_dict={tf_data: batch_xs, tf_labels: batch_ys, keep_prob: 0.5}) # dropout only during training
 
 # --------------------------------------------------
 # test
@@ -191,3 +200,8 @@ print("test accuracy %g"%accuracy.eval(feed_dict={tf_data: Test, tf_labels: LTes
 
 
 sess.close()
+
+_,ax = plt.subplots()
+ax.plot(range(len(Accuracy_list)),Accuracy_list,'k',label = 'Test Accuracy')
+ax.legend(loc = 'upper right',shadow = True)
+plt.show()

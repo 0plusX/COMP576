@@ -84,9 +84,8 @@ def Construct_ConvLayer(x_image,dimension,firstLayer = False):
     W_conv = weight_variable(dimension)
     b_conv = bias_variable([dimension[-1]])
     h_conv = tf.nn.relu(conv2d(x_image, W_conv) + b_conv)
-    if firstLayer:
-        return max_pool_2x2(h_conv), W_conv
-    return max_pool_2x2(h_conv)
+    return max_pool_2x2(h_conv), W_conv,h_conv
+
 
 def Construct_FCLayer(h_pool2, dimension,softmax = False):
     W_fc = weight_variable(dimension)
@@ -145,10 +144,10 @@ dim2 = [5,5,32,64]
 dimdl = [7*7*64,1024]
 dimsoft = [1024,10]
 # first convolutional layer
-h_pool1, W_conv1 = Construct_ConvLayer(tf_data,dim1, firstLayer = True)
+h_pool1, W_conv1,h_conv1 = Construct_ConvLayer(tf_data,dim1, firstLayer = True)
 
 # second convolutional layer
-h_pool2 = Construct_ConvLayer(h_pool1,dim2)
+h_pool2, W_conv2,h_conv2  = Construct_ConvLayer(h_pool1,dim2)
 
 # densely connected layer
 h_fc1 = Construct_FCLayer(h_pool2,dimdl)
@@ -162,46 +161,109 @@ y_conv = Construct_FCLayer(h_fc1_drop,dimsoft,softmax = True)
 # --------------------------------------------------
 # loss
 #set up the loss, optimization, evaluation, and accuracy
-learningRate = 1e-4
-y = tf.nn.softmax(y_conv, name = 'y')
-cross_entropy = tf.reduce_mean(-tf.reduce_sum(tf_labels * tf.log(y), reduction_indices = [1]),name = 'Loss')
-optimizer = tf.train.AdamOptimizer(learningRate).minimize(cross_entropy)
-correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(tf_labels, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32,name = 'Correct_Prediection'), name = 'accuracy')
 
-# --------------------------------------------------
-# optimization
+#learningRate = [1e-4,1e-3,5e-4,1e-2]
+learningRate = [1e-3]
 
-sess.run(tf.initialize_all_variables())
-batch_xs = np.zeros((batchsize, imsize, imsize, nchannels)) #setup as [batchsize, width, height, numberOfChannels] and use np.zeros()
-batch_ys = np.zeros((batchsize, nclass))#setup as [batchsize, the how many classes]
+Loss_list = {1e-3:[]}
+Accuracy_list = {1e-3:[]}
+#TAccuracy_list = {1e-3:[]}
+#Loss_list = {1e-4:[],1e-3:[],5e-4:[],1e-2:[]}
+#Accuracy_list = {1e-4:[],1e-3:[],5e-4:[],1e-2:[]}
+#TAccuracy_list = {1e-4:[],1e-3:[],5e-4:[],1e-2:[]}
+for lr in learningRate:
+    y = tf.nn.softmax(y_conv, name = 'y')
+    cross_entropy = tf.reduce_mean(-tf.reduce_sum(tf_labels * tf.log(y), reduction_indices = [1]),name = 'Loss')
+    optimizer = tf.train.AdamOptimizer(lr).minimize(cross_entropy)
+    correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(tf_labels, 1))
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32,name = 'Correct_Prediection'), name = 'accuracy')
 
-Loss_list = []
-Accuracy_list = []
-for i in range(500): # try a small iteration size once it works then continue
-    perm = np.arange(nclass * ntrain)
-    np.random.shuffle(perm)
-    for j in range(batchsize):
-        batch_xs[j,:,:,:] = Train[perm[j],:,:,:]
-        batch_ys[j,:] = LTrain[perm[j],:]
-    #W_firstLayer = W_conv1.eval()
-    if i%10 == 0:
+    # --------------------------------------------------
+    # optimization
+
+    sess.run(tf.initialize_all_variables())
+    batch_xs = np.zeros((batchsize, imsize, imsize, nchannels)) #setup as [batchsize, width, height, numberOfChannels] and use np.zeros()
+    batch_ys = np.zeros((batchsize, nclass))#setup as [batchsize, the how many classes]
+
+
+    for i in range(1200): # try a small iteration size once it works then continue
+        perm = np.arange(nclass * ntrain)
+        np.random.shuffle(perm)
+        for j in range(batchsize):
+            batch_xs[j,:,:,:] = Train[perm[j],:,:,:]
+            batch_ys[j,:] = LTrain[perm[j],:]
         train_accuracy = accuracy.eval(feed_dict = {tf_data: batch_xs, tf_labels: batch_ys, keep_prob: 1.0})
         train_loss = cross_entropy.eval(feed_dict = {tf_data: batch_xs, tf_labels: batch_ys, keep_prob: 1.0})
-        Accuracy_list.append(train_accuracy)
-        Loss_list.append(train_loss)
-        print("step: {}, train accuracy:{}, loss:{}".format(i,train_accuracy,train_loss))
-    optimizer.run(feed_dict={tf_data: batch_xs, tf_labels: batch_ys, keep_prob: 0.5}) # dropout only during training
+        #Accuracy_list.append(train_accuracy)
+        #Loss_list.append(train_loss)
+        Accuracy_list[lr].append(train_accuracy)
+        Loss_list[lr].append(train_loss)
+        W_firstLayer = W_conv1.eval()
+        if i%100 == 0:
+            print("step: {} with lr: {}, train accuracy:{}, loss:{}".format(i,lr,train_accuracy,train_loss))
 
-# --------------------------------------------------
-# test
+        optimizer.run(feed_dict={tf_data: batch_xs, tf_labels: batch_ys, keep_prob: 0.5}) # dropout only during training
 
-print("test accuracy %g"%accuracy.eval(feed_dict={tf_data: Test, tf_labels: LTest, keep_prob: 1.0}))
+        #TAccuracy_list[lr].append(test_accuracy)
 
+    # --------------------------------------------------
+    # test
+    Activation_firstL= np.array([h_conv1.eval(feed_dict = {tf_data: Test, tf_labels: LTest, keep_prob: 1.0})])
+    Activation_secL= np.array(h_conv2.eval(feed_dict = {tf_data: Test, tf_labels: LTest, keep_prob: 1.0}))
+    test_accuracy = accuracy.eval(feed_dict = {tf_data: Test, tf_labels: LTest, keep_prob: 1.0})
+    print("test accuracy %g" % test_accuracy)
 
+    print('FirstLayer activation stat: Min: {},Max :{},Mean:{},std:{},var:{}'.format(Activation_firstL.min(),
+                                                                                     Activation_firstL.max(),
+                                                                                     Activation_firstL.mean(),
+                                                                                     Activation_firstL.std(),
+                                                                                     Activation_firstL.var()))
+    print('SecondLayer activation stat: Min: {},Max :{},Mean:{},std:{},var:{}'.format(Activation_secL.min(),
+                                                                                     Activation_secL.max(),
+                                                                                     Activation_secL.mean(),
+                                                                                     Activation_secL.std(),
+                                                                                     Activation_secL.var()))
 sess.close()
-
-_,ax = plt.subplots()
-ax.plot(range(len(Accuracy_list)),Accuracy_list,'k',label = 'Test Accuracy')
-ax.legend(loc = 'upper right',shadow = True)
+fig,ax = plt.subplots()
+fig.suptitle('Accuracy with different LR AdagradOptimizer',fontsize = 18)
+#ax.plot(range(len(Accuracy_list[1e-4])),Accuracy_list[1e-4],'k',label = 'Train Accuracy with LR,1e-4 ')
+ax.plot(range(len(Accuracy_list[1e-3])),Accuracy_list[1e-3],'k--',label = 'Train Accuracy with LR,1e-3 ')
+#ax.plot(range(len(Accuracy_list[5e-4])),Accuracy_list[5e-4],'r--',label = 'Train Accuracy with LR,5e-4 ')
+#ax.plot(range(len(Accuracy_list[1e-2])),Accuracy_list[1e-2],'r',label = 'Train Accuracy with LR,1e-2 ')
+ax.set(xlabel='Iteration', ylabel='Accuracy')
+ax.legend(loc = 'lower right',shadow = True)
 plt.show()
+fig.savefig('Accuracy_AdagradOptimizer.png')
+
+fig,bx = plt.subplots()
+fig.suptitle('Loss with different LR AdagradOptimizer',fontsize = 18)
+#bx.plot(range(len(Loss_list[1e-4])),Loss_list[1e-4],'k',label = 'Train Loss with LR,1e-4 ')
+bx.plot(range(len(Loss_list[1e-3])),Loss_list[1e-3],'k--',label = 'Train Loss with LR,1e-3 ')
+#bx.plot(range(len(Loss_list[5e-4])),Loss_list[5e-4],'r--',label = 'Train Loss with LR,5e-4 ')
+#bx.plot(range(len(Loss_list[1e-2])),Loss_list[1e-2],'r',label = 'Train Loss with LR,1e-2 ')
+bx.set(xlabel='Iteration', ylabel='Loss')
+bx.legend(loc = 'upper right',shadow = True)
+plt.show()
+fig.savefig('Loss_AdagradOptimizer.png')
+
+"""fig,cx = plt.subplots()
+fig.suptitle('Test Accuracy AdagradOptimizer',fontsize = 18)
+cx.plot(range(len(TAccuracy_list[1e-4])),TAccuracy_list[1e-4],'k',label = 'Test with LR,1e-4 ')
+cx.plot(range(len(TAccuracy_list[1e-3])),TAccuracy_list[1e-3],'k--',label = 'Test with LR,1e-3 ')
+cx.plot(range(len(TAccuracy_list[5e-4])),TAccuracy_list[5e-4],'r--',label = 'Test with LR,5e-4 ')
+cx.plot(range(len(TAccuracy_list[1e-2])),TAccuracy_list[1e-2],'r',label = 'Test with LR,1e-2 ')
+cx.set(xlabel='Iteration', ylabel='Loss')
+cx.legend(loc = 'lower right',shadow = True)
+plt.show()
+fig.savefig('Test_AdagradOptimizer.png')
+"""
+
+
+fig = plt.figure()
+fig.suptitle('Visualize First Conv Layer',fontsize = 18)
+for i in range(32):
+    ax = fig.add_subplot(4, 8, 1 + i)
+    ax.imshow(W_firstLayer[:, :, 0, i], cmap='gray')
+    plt.axis('off')
+plt.show()
+#fig.savefig('FistConv.png')
